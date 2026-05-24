@@ -2,7 +2,7 @@ import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode-terminal';
 import dotenv from 'dotenv';
-import http from 'http'; // Adicionado para enganar o Render
+import http from 'http'; // Essencial para o Render
 
 dotenv.config();
 
@@ -10,7 +10,7 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot está vivo!');
+    res.end('Bot vivo!');
 }).listen(PORT, '0.0.0.0', () => {
     console.log(`📡 Servidor de manutenção ativo na porta ${PORT}`);
 });
@@ -34,25 +34,25 @@ const client = new Client({
 });
 
 client.on('qr', (qr) => {
-    console.log('⚠️ QR CODE GERADO (Pode escanear ou aguardar o código):');
+    console.log('⚠️ QR CODE:');
     qrcode.generate(qr, { small: true });
 });
 
-client.on('ready', () => console.log('✅✅ BOT CONECTADO E PRONTO! ✅✅'));
+client.on('ready', () => console.log('✅✅ BOT ONLINE E CONECTADO! ✅✅'));
 
 async function start() {
     try {
-        console.log("🚀 Iniciando navegador no Docker...");
+        console.log("🚀 Iniciando navegador...");
         await client.initialize();
         
         // Espera 30 segundos para o servidor respirar
         await new Promise(res => setTimeout(res, 30000));
 
         if (PHONE_NUMBER && !client.info) {
-            console.log("Soliçitando código para:", PHONE_NUMBER);
+            console.log("Solicitando código para:", PHONE_NUMBER);
             const code = await client.requestPairingCode(PHONE_NUMBER);
             console.log('\n=========================================');
-            console.log('👉 👉 SEU CÓDIGO: ', code);
+            console.log('👉 SEU CÓDIGO: ', code);
             console.log('=========================================\n');
         }
     } catch (err) {
