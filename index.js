@@ -1,16 +1,15 @@
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
-import qrcode from 'qrcode-terminal';
 import dotenv from 'dotenv';
 import http from 'http';
 
 dotenv.config();
 
-// Servidor para o Render ficar feliz
+// Servidor para manter o Render vivo
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot T-I-Z Ativo');
+    res.end('Bot T-I-Z Online');
 }).listen(PORT, '0.0.0.0');
 
 const PHONE_NUMBER = process.env.PHONE_NUMBER;
@@ -20,54 +19,43 @@ const client = new Client({
     puppeteer: {
         headless: 'new',
         executablePath: '/usr/bin/google-chrome',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--single-process']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--no-zygote']
     }
 });
 
-client.on('qr', (qr) => {
-    console.log('⚠️ O CÓDIGO FALHOU, MAS O QR CODE ESTÁ AQUI:');
-    qrcode.generate(qr, { small: true });
+// Removemos o console.log do QR para não poluir o log
+client.on('qr', () => {
+    console.log('⏳ O sistema está pronto. Aguardando para gerar o código de 8 dígitos...');
 });
 
-client.on('ready', () => console.log('✅✅ BOT TOTALMENTE CONECTADO! ✅✅'));
-
-// FUNÇÃO PARA PEDIR O CÓDIGO COM REPETIÇÃO
-async function solicitarCodigo() {
-    if (!PHONE_NUMBER) {
-        console.log("❌ ERRO: Variável PHONE_NUMBER vazia no Render!");
-        return;
-    }
-
-    let tentativa = 0;
-    while (tentativa < 10) {
-        try {
-            tentativa++;
-            console.log(` tentando gerar código (Tentativa ${tentativa})...`);
-            const code = await client.requestPairingCode(PHONE_NUMBER);
-            console.log('\n=========================================');
-            console.log('👉 👉 SEU CÓDIGO É: ', code);
-            console.log('=========================================\n');
-            break; // Se conseguiu, para de tentar
-        } catch (e) {
-            console.log(`❌ Ainda não pronto. Tentando de novo em 15s...`);
-            await new Promise(res => setTimeout(res, 15000));
-        }
-    }
-}
+client.on('ready', () => {
+    console.log('✅✅ SUCESSO! BOT CONECTADO! ✅✅');
+});
 
 async function start() {
     try {
-        console.log("🚀 1. Abrindo navegador Chrome no Docker...");
+        console.log("🚀 1. Iniciando navegador...");
         await client.initialize();
         
-        console.log("🚀 2. Navegador OK. Aguardando sistema estabilizar...");
+        console.log("🚀 2. Aguardando 30 segundos para o WhatsApp carregar...");
         await new Promise(res => setTimeout(res, 30000));
 
-        console.log("🚀 3. Iniciando pedido de código...");
-        await solicitarCodigo();
-        
+        if (PHONE_NUMBER) {
+            console.log(`🚀 3. Solicitando código para: ${PHONE_NUMBER}`);
+            // Pedimos o código
+            const code = await client.requestPairingCode(PHONE_NUMBER);
+            console.log('\n=========================================');
+            console.log('👉 👉 SEU CÓDIGO DE 8 DÍGITOS É:');
+            console.log(`👉 👉      ${code}      👈 👈`);
+            console.log('=========================================\n');
+        } else {
+            console.log("❌ ERRO: PHONE_NUMBER não configurado nas variáveis do Render!");
+        }
+
     } catch (err) {
-        console.error("❌ ERRO NO START:", err.message);
+        console.error("❌ ERRO AO GERAR CÓDIGO:", err.message);
+        console.log("Tentando novamente em 30 segundos...");
+        setTimeout(start, 30000);
     }
 }
 
